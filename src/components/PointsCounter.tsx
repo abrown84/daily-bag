@@ -3,6 +3,7 @@ import { useStats } from '../hooks/useStats'
 import { useAuth } from '../hooks/useAuth'
 import { useDemo } from '../contexts/DemoContext'
 import { useChores } from '../contexts/ChoreContext'
+import { useRedemption } from '../contexts/RedemptionContext'
 // import { useSoundEffect } from '../contexts/SoundContext'
 import { LEVELS } from '../types/chore'
 import { LevelMeme } from './profile/LevelMeme'
@@ -68,6 +69,7 @@ export const PointsCounter: React.FC = memo(() => {
   const { user } = useAuth()
   const { isDemoMode } = useDemo()
   const { state: choreState } = useChores()
+  const { conversionRate } = useRedemption()
   
   // Get current user's stats from StatsContext
   const userStats = user ? getUserStats(user.id) : null
@@ -205,6 +207,9 @@ export const PointsCounter: React.FC = memo(() => {
               value={stats.earnedPoints || 0}
               duration={800}
             />
+          </div>
+          <div className="text-sm sm:text-base font-semibold text-success mt-1">
+            = ${((stats.earnedPoints || 0) / conversionRate).toFixed(2)}
           </div>
           {stats.lifetimePoints !== undefined && stats.lifetimePoints !== stats.earnedPoints && (
             <div className="text-xs text-muted-foreground mt-1">
