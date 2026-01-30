@@ -198,12 +198,30 @@ export const DemoProvider: React.FC<DemoProviderProps> = ({ children }) => {
   }
 
   const getDemoChores = (): Chore[] => {
-    // Return stored demo chores if available
+    // Return stored demo chores if available in state
     if (demoChores.length > 0) {
-
       return demoChores
     }
-    
+
+    // Try to restore from localStorage first (preserves completed chores and points)
+    try {
+      const savedChores = localStorage.getItem('demoChores')
+      if (savedChores) {
+        const parsedChores = JSON.parse(savedChores)
+        // Restore dates properly
+        const restoredChores = parsedChores.map((chore: any) => ({
+          ...chore,
+          createdAt: chore.createdAt ? new Date(chore.createdAt) : new Date(),
+          dueDate: chore.dueDate ? new Date(chore.dueDate) : undefined,
+          completedAt: chore.completedAt ? new Date(chore.completedAt) : undefined,
+        }))
+        setDemoChores(restoredChores)
+        return restoredChores
+      }
+    } catch (error) {
+      console.error('Error restoring demo chores from localStorage:', error)
+    }
+
     try {
 
       
@@ -336,13 +354,12 @@ export const DemoProvider: React.FC<DemoProviderProps> = ({ children }) => {
       if (storedDemoMode === 'true') {
         setIsDemoMode(true)
 
-        // If we're restoring demo mode, we need to regenerate the data
-        // since it was cleared when the component unmounted
+        // Restore demo data - getDemoChores will try localStorage first
         if (demoChores.length === 0) {
-          const generatedChores = getDemoChores()
-          const generatedStats = getDemoStatsFromChores(generatedChores)
-          setDemoChores(generatedChores)
-          setDemoStats(generatedStats)
+          const restoredChores = getDemoChores()
+          const restoredStats = getDemoStatsFromChores(restoredChores)
+          setDemoChores(restoredChores)
+          setDemoStats(restoredStats)
         }
       }
     } catch (error) {
