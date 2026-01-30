@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useCallback, useRef, useEffect, memo } from 'react'
 
-type SoundType = 'click' | 'success' | 'levelUp' | 'points' | 'bonus' | 'error' | 'woosh'
+type SoundType = 'click' | 'success' | 'levelUp' | 'points' | 'bonus' | 'error' | 'woosh' | 'cashRegister'
 
 interface SoundContextType {
   soundEnabled: boolean
@@ -12,50 +12,16 @@ interface SoundContextType {
 
 const SoundContext = createContext<SoundContextType | null>(null)
 
-// Sound frequencies and patterns (using Web Audio API oscillators)
-const SOUND_CONFIGS: Record<SoundType, { frequencies: number[]; durations: number[]; type: OscillatorType; gain: number }> = {
-  click: {
-    frequencies: [800, 600],
-    durations: [30, 30],
-    type: 'sine',
-    gain: 0.1
-  },
-  success: {
-    frequencies: [523, 659, 784], // C5, E5, G5 - major chord
-    durations: [80, 80, 120],
-    type: 'sine',
-    gain: 0.15
-  },
-  levelUp: {
-    frequencies: [392, 523, 659, 784, 1047], // G4, C5, E5, G5, C6 - ascending
-    durations: [100, 100, 100, 100, 200],
-    type: 'sine',
-    gain: 0.2
-  },
-  points: {
-    frequencies: [880, 1100],
-    durations: [50, 80],
-    type: 'sine',
-    gain: 0.1
-  },
-  bonus: {
-    frequencies: [587, 784, 988], // D5, G5, B5
-    durations: [60, 60, 100],
-    type: 'triangle',
-    gain: 0.15
-  },
-  error: {
-    frequencies: [200, 150],
-    durations: [100, 150],
-    type: 'sawtooth',
-    gain: 0.1
-  },
-  woosh: {
-    frequencies: [400, 200, 100],
-    durations: [50, 50, 100],
-    type: 'sine',
-    gain: 0.08
-  }
+// Map sound types to audio file paths
+const SOUND_FILES: Record<SoundType, string> = {
+  click: '/sounds/click.mp3',
+  success: '/sounds/success.mp3',
+  levelUp: '/sounds/level-up.mp3',
+  points: '/sounds/points.mp3',
+  bonus: '/sounds/bonus.mp3',
+  error: '/sounds/error.mp3',
+  woosh: '/sounds/woosh.mp3',
+  cashRegister: '/sounds/cash-register.mp3'
 }
 
 interface SoundProviderProps {
@@ -74,12 +40,36 @@ export const SoundProvider = memo<SoundProviderProps>(({ children }) => {
   const [volume, setVolume] = useState(() => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('soundVolume')
-      return saved ? parseFloat(saved) : 0.5
+      return saved ? parseFloat(saved) : 0.1
     }
-    return 0.5
+    return 0.1
   })
 
-  const audioContextRef = useRef<AudioContext | null>(null)
+  // Preloaded audio elements cache
+  const audioCache = useRef<Map<SoundType, HTMLAudioElement>>(new Map())
+
+  // Debounce tracking - prevent same sound from spamming
+  const lastPlayedRef = useRef<Map<SoundType, number>>(new Map())
+  const DEBOUNCE_MS = 150 // Minimum time between same sound
+
+  // Preload all sounds on mount
+  useEffect(() => {
+    const entries = Object.entries(SOUND_FILES) as [SoundType, string][]
+    entries.forEach(([type, path]) => {
+      const audio = new Audio(path)
+      audio.preload = 'auto'
+      audioCache.current.set(type, audio)
+    })
+
+    // Cleanup on unmount
+    return () => {
+      audioCache.current.forEach(audio => {
+        audio.pause()
+        audio.src = ''
+      })
+      audioCache.current.clear()
+    }
+  }, [])
 
   // Save preferences to localStorage
   useEffect(() => {
@@ -90,62 +80,37 @@ export const SoundProvider = memo<SoundProviderProps>(({ children }) => {
     localStorage.setItem('soundVolume', String(volume))
   }, [volume])
 
-  // Initialize AudioContext on first user interaction
-  const getAudioContext = useCallback(() => {
-    if (!audioContextRef.current) {
-      audioContextRef.current = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)()
-    }
-    // Resume if suspended (browsers require user gesture)
-    if (audioContextRef.current.state === 'suspended') {
-      audioContextRef.current.resume()
-    }
-    return audioContextRef.current
-  }, [])
-
   const playSound = useCallback((type: SoundType) => {
     if (!soundEnabled) return
 
+    // Check debounce - prevent same sound from playing too quickly
+    const now = Date.now()
+    const lastPlayed = lastPlayedRef.current.get(type) || 0
+    if (now - lastPlayed < DEBOUNCE_MS) return
+    lastPlayedRef.current.set(type, now)
+
     try {
-      const ctx = getAudioContext()
-      const config = SOUND_CONFIGS[type]
+      const cachedAudio = audioCache.current.get(type)
+      if (!cachedAudio) return
 
-      let startTime = ctx.currentTime
+      // Clone the audio element to allow overlapping sounds
+      const audio = cachedAudio.cloneNode(true) as HTMLAudioElement
+      audio.volume = volume
 
-      config.frequencies.forEach((freq, index) => {
-        const oscillator = ctx.createOscillator()
-        const gainNode = ctx.createGain()
+      // Clean up after playback
+      audio.onended = () => {
+        audio.src = ''
+      }
 
-        oscillator.type = config.type
-        oscillator.frequency.setValueAtTime(freq, startTime)
-
-        // Apply volume with envelope for smooth sound
-        const noteGain = config.gain * volume
-        gainNode.gain.setValueAtTime(0, startTime)
-        gainNode.gain.linearRampToValueAtTime(noteGain, startTime + 0.01)
-        gainNode.gain.linearRampToValueAtTime(0, startTime + config.durations[index] / 1000)
-
-        oscillator.connect(gainNode)
-        gainNode.connect(ctx.destination)
-
-        oscillator.start(startTime)
-        oscillator.stop(startTime + config.durations[index] / 1000 + 0.05)
-
-        startTime += config.durations[index] / 1000
+      audio.play().catch(error => {
+        // Silently fail if audio isn't available (e.g., autoplay blocked)
+        console.debug('Sound playback failed:', error)
       })
     } catch (error) {
       // Silently fail if audio isn't available
       console.debug('Sound playback failed:', error)
     }
-  }, [soundEnabled, volume, getAudioContext])
-
-  // Cleanup AudioContext on unmount
-  useEffect(() => {
-    return () => {
-      if (audioContextRef.current) {
-        audioContextRef.current.close()
-      }
-    }
-  }, [])
+  }, [soundEnabled, volume])
 
   const value: SoundContextType = {
     soundEnabled,

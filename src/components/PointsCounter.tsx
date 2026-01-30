@@ -3,7 +3,7 @@ import { useStats } from '../hooks/useStats'
 import { useAuth } from '../hooks/useAuth'
 import { useDemo } from '../contexts/DemoContext'
 import { useChores } from '../contexts/ChoreContext'
-import { useSoundEffect } from '../contexts/SoundContext'
+// import { useSoundEffect } from '../contexts/SoundContext'
 import { LEVELS } from '../types/chore'
 import { LevelMeme } from './profile/LevelMeme'
 import { AnimatedCounter, AnimatedProgressBar } from './animations'
@@ -146,17 +146,15 @@ export const PointsCounter: React.FC = memo(() => {
   const currentLevelData = LEVELS.find(level => level.level === stats.currentLevel)
   const nextLevelData = LEVELS.find(level => level.level === stats.currentLevel + 1)
 
-  // Sound effects
-  const { playSound } = useSoundEffect()
-  const prevPointsRef = useRef(stats.earnedPoints)
-
-  // Play sound when points change
-  useEffect(() => {
-    if (prevPointsRef.current !== stats.earnedPoints && stats.earnedPoints > prevPointsRef.current) {
-      playSound('points')
-      prevPointsRef.current = stats.earnedPoints
-    }
-  }, [stats.earnedPoints, playSound])
+  // Sound effects disabled - handled by ChorePopupCelebration
+  // const { playSound } = useSoundEffect()
+  // const prevPointsRef = useRef(stats.earnedPoints)
+  // useEffect(() => {
+  //   if (prevPointsRef.current !== stats.earnedPoints && stats.earnedPoints > prevPointsRef.current) {
+  //     playSound('points')
+  //     prevPointsRef.current = stats.earnedPoints
+  //   }
+  // }, [stats.earnedPoints, playSound])
   
   // Get level icon based on level
   const getLevelIcon = (level: number) => {

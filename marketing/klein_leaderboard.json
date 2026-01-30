@@ -1,0 +1,87 @@
+{
+  "1": {
+    "class_type": "UnetLoaderGGUF",
+    "inputs": {
+      "unet_name": "flux-2-klein-4b-Q8_0.gguf"
+    }
+  },
+  "2": {
+    "class_type": "CLIPLoader",
+    "inputs": {
+      "clip_name": "qwen_3_4b.safetensors",
+      "type": "flux2"
+    }
+  },
+  "3": {
+    "class_type": "VAELoader",
+    "inputs": {
+      "vae_name": "flux2-vae.safetensors"
+    }
+  },
+  "4": {
+    "class_type": "CLIPTextEncode",
+    "inputs": {
+      "text": "Three-tier golden championship podium floating in cosmic space, largest center trophy flanked by smaller trophies, glowing amber gold metallic finish, star badges and victory laurels, competitive esports aesthetic, dark navy blue cosmic background with nebula, holographic light beams, dramatic rim lighting, championship victory mood, no text, 8k quality render",
+      "clip": ["2", 0]
+    }
+  },
+  "5": {
+    "class_type": "EmptyFlux2LatentImage",
+    "inputs": {
+      "width": 1344,
+      "height": 768,
+      "batch_size": 1
+    }
+  },
+  "6": {
+    "class_type": "KSamplerSelect",
+    "inputs": {
+      "sampler_name": "euler"
+    }
+  },
+  "7": {
+    "class_type": "Flux2Scheduler",
+    "inputs": {
+      "steps": 50,
+      "width": 1344,
+      "height": 768
+    }
+  },
+  "8": {
+    "class_type": "RandomNoise",
+    "inputs": {
+      "noise_seed": 556789
+    }
+  },
+  "9": {
+    "class_type": "BasicGuider",
+    "inputs": {
+      "model": ["1", 0],
+      "conditioning": ["4", 0]
+    }
+  },
+  "10": {
+    "class_type": "SamplerCustomAdvanced",
+    "inputs": {
+      "noise": ["8", 0],
+      "guider": ["9", 0],
+      "sampler": ["6", 0],
+      "sigmas": ["7", 0],
+      "latent_image": ["5", 0]
+    }
+  },
+  "11": {
+    "class_type": "VAEDecode",
+    "inputs": {
+      "samples": ["10", 0],
+      "vae": ["3", 0]
+    }
+  },
+  "12": {
+    "class_type": "SaveImage",
+    "inputs": {
+      "filename_prefix": "dailybag_leaderboard",
+      "images": ["11", 0]
+    }
+  }
+}

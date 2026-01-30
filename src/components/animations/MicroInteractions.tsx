@@ -1,6 +1,7 @@
 import React, { memo, useCallback, useRef } from 'react'
 import { motion } from 'framer-motion'
-import { useSoundEffect } from '../../contexts/SoundContext'
+// Sound disabled for UI interactions - only celebration sounds are enabled
+// import { useSoundEffect } from '../../contexts/SoundContext'
 
 interface InteractiveWrapperProps {
   children: React.ReactNode
@@ -25,15 +26,10 @@ export const InteractiveWrapper = memo<InteractiveWrapperProps>(({
   scale = 1.02,
   whileTap = 0.98
 }) => {
-  const { playSound } = useSoundEffect()
-
   const handleClick = useCallback((e: React.MouseEvent) => {
     if (disabled) return
-    if (sound !== 'none') {
-      playSound(sound)
-    }
     onClick?.(e)
-  }, [disabled, onClick, playSound, sound])
+  }, [disabled, onClick])
 
   return (
     <motion.div
@@ -67,13 +63,10 @@ export const PressableCard = memo<PressableCardProps>(({
   onClick,
   disabled = false
 }) => {
-  const { playSound } = useSoundEffect()
-
   const handleClick = useCallback((e: React.MouseEvent) => {
     if (disabled) return
-    playSound('click')
     onClick?.(e)
-  }, [disabled, onClick, playSound])
+  }, [disabled, onClick])
 
   return (
     <motion.div
@@ -113,15 +106,11 @@ export const RippleButton = memo<RippleButtonProps>(({
   onClick,
   disabled = false
 }) => {
-  const { playSound } = useSoundEffect()
   const buttonRef = useRef<HTMLButtonElement>(null)
   const rippleRef = useRef<HTMLSpanElement>(null)
 
   const handleClick = useCallback((e: React.MouseEvent<HTMLButtonElement>) => {
     if (disabled) return
-
-    // Play sound
-    playSound('click')
 
     // Create ripple effect
     if (buttonRef.current && rippleRef.current) {
@@ -139,7 +128,7 @@ export const RippleButton = memo<RippleButtonProps>(({
     }
 
     onClick?.(e)
-  }, [disabled, onClick, playSound])
+  }, [disabled, onClick])
 
   return (
     <button
@@ -174,17 +163,6 @@ export const ShakeOnError = memo<ShakeOnErrorProps>(({
   trigger,
   className = ''
 }) => {
-  const { playSound } = useSoundEffect()
-  const prevTriggerRef = useRef(trigger)
-
-  // Play error sound when trigger changes to true
-  React.useEffect(() => {
-    if (trigger && !prevTriggerRef.current) {
-      playSound('error')
-    }
-    prevTriggerRef.current = trigger
-  }, [trigger, playSound])
-
   return (
     <motion.div
       className={className}
@@ -214,17 +192,6 @@ export const SuccessPulse = memo<SuccessPulseProps>(({
   trigger,
   className = ''
 }) => {
-  const { playSound } = useSoundEffect()
-  const prevTriggerRef = useRef(trigger)
-
-  // Play success sound when trigger changes to true
-  React.useEffect(() => {
-    if (trigger && !prevTriggerRef.current) {
-      playSound('success')
-    }
-    prevTriggerRef.current = trigger
-  }, [trigger, playSound])
-
   return (
     <motion.div
       className={className}

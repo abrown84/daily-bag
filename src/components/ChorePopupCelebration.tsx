@@ -1,6 +1,13 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react'
-import { animate } from 'animejs'
-import { Star, Lightning, Plus, Sparkle } from '@phosphor-icons/react'
+import { animate, createTimeline, stagger, utils, createSpring } from 'animejs'
+import { Sparkle } from '@phosphor-icons/react'
+import { useSoundEffect } from '../contexts/SoundContext'
+
+// Spring presets for satisfying motion
+const springs = {
+  pop: createSpring({ mass: 1, stiffness: 400, damping: 15 }),
+  bounce: createSpring({ mass: 1, stiffness: 200, damping: 12 }),
+}
 
 interface PopupCelebration {
   id: string
@@ -25,7 +32,7 @@ export const ChorePopupCelebration: React.FC<ChorePopupCelebrationProps> = ({
   return (
     <div className="fixed inset-0 pointer-events-none z-50">
       {celebrations.map((celebration) => (
-        <DamagePopupItem
+        <CoinPopupItem
           key={celebration.id}
           celebration={celebration}
           onRemove={onRemove}
@@ -35,189 +42,187 @@ export const ChorePopupCelebration: React.FC<ChorePopupCelebrationProps> = ({
   )
 }
 
-interface DamagePopupItemProps {
+interface CoinPopupItemProps {
   celebration: PopupCelebration
   onRemove: (id: string) => void
 }
 
-const DamagePopupItem: React.FC<DamagePopupItemProps> = ({ celebration, onRemove }) => {
+const CoinPopupItem: React.FC<CoinPopupItemProps> = ({ celebration, onRemove }) => {
   const containerRef = useRef<HTMLDivElement>(null)
-  const innerRef = useRef<HTMLDivElement>(null)
+  const coinRef = useRef<HTMLDivElement>(null)
+  const valueRef = useRef<HTMLDivElement>(null)
   const glowRef = useRef<HTMLDivElement>(null)
-  const sparkleRefs = useRef<(HTMLDivElement | null)[]>([])
+  const sparklesRef = useRef<HTMLDivElement>(null)
+  const burstRef = useRef<HTMLDivElement>(null)
+  const { playSound } = useSoundEffect()
 
-  // Generate consistent movement for each popup - memoize to prevent re-generation
+  // Generate movement for arc trajectory
   const movement = useMemo(() => ({
-    driftX: (Math.random() - 0.5) * 60,
-    driftY: -80 - Math.random() * 40,
-    rotation: (Math.random() - 0.5) * 15,
+    driftX: utils.random(-40, 40),
+    arcHeight: utils.random(60, 100),
+    rotation: utils.random(360, 720),
   }), [])
 
-  // More sparkles for bigger points - makes high-value completions feel epic
-  const sparkleCount = celebration.points >= 30 ? 8 : celebration.points >= 15 ? 5 : 3
-
-  // Pre-generate sparkle positions
-  const sparklePositions = useMemo(() =>
-    [...Array(sparkleCount)].map((_, i) => ({
-      left: '50%',
-      top: '50%',
-      angle: (i / sparkleCount) * Math.PI * 2,
-      distance: 25 + Math.random() * 30,
-    })), [sparkleCount])
+  // More coins for bigger points
+  const coinCount = celebration.points >= 50 ? 5 : celebration.points >= 25 ? 3 : 1
 
   useEffect(() => {
     const container = containerRef.current
-    const inner = innerRef.current
+    const coin = coinRef.current
+    const value = valueRef.current
     const glow = glowRef.current
-    const sparkles = sparkleRefs.current.filter(Boolean) as HTMLDivElement[]
+    const sparkles = sparklesRef.current
+    const burst = burstRef.current
 
-    if (!container || !inner || !glow) return
+    if (!container || !coin) return
 
-    // Store animation instances for cleanup
-    const animations: ReturnType<typeof animate>[] = []
-
-    // Explosive entrance - snap in with dramatic bounce
-    const entranceAnim = animate(container, {
-      opacity: [0, 1],
-      scale: [0.3, 1.5, 0.9, 1.2, 1],
-      duration: 500,
-      ease: 'outElastic',
-    })
-    animations.push(entranceAnim)
-
-    // Bouncy arc motion upward with slight curve
-    const floatAnim = animate(container, {
-      translateY: [0, -30, movement.driftY * 1.2],
-      translateX: [0, movement.driftX * 0.3, movement.driftX * 1.5],
-      rotate: [0, movement.rotation * 3, movement.rotation],
-      duration: 1400,
-      delay: 150,
-      ease: 'outCubic',
-    })
-    animations.push(floatAnim)
-
-    // Smooth fade with scale down and blur
-    const fadeAnim = animate(container, {
-      opacity: [1, 1, 0.7, 0],
-      scale: [1, 1.1, 0.8, 0.4],
-      filter: ['blur(0px)', 'blur(0px)', 'blur(2px)', 'blur(8px)'],
-      duration: 600,
-      delay: 1100,
-      ease: 'inQuad',
-    })
-    animations.push(fadeAnim)
-
-    // Punchy inner pulse - heartbeat style
-    const pulseAnim = animate(inner, {
-      scale: [1, 1.15, 1, 1.08, 1],
-      duration: 500,
-      delay: 50,
-      ease: 'outQuart',
-    })
-    animations.push(pulseAnim)
-
-    // Expanding glow rings
-    const glowAnimation = animate(glow, {
-      opacity: [0, 0.9, 0.6, 0],
-      scale: [0.5, 1.8, 2.5],
-      duration: 1000,
-      ease: 'outQuart',
-    })
-    animations.push(glowAnimation)
-
-    // Sparkle burst - radial explosion pattern
-    sparkles.forEach((sparkle, i) => {
-      const pos = sparklePositions[i]
-      if (!pos) return
-      const sparkleAnimation = animate(sparkle, {
-        opacity: [0, 1, 1, 0],
-        scale: [0, 1.8, 1.2, 0],
-        translateX: [0, Math.cos(pos.angle) * pos.distance],
-        translateY: [0, Math.sin(pos.angle) * pos.distance - 15],
-        rotate: [0, 360],
-        duration: 600,
-        delay: 80 + i * 30,
-        ease: 'outQuart',
-      })
-      animations.push(sparkleAnimation)
-    })
-
-    // Remove the popup after animation completes
-    const timer = setTimeout(() => {
-      onRemove(celebration.id)
-    }, 1800)
-
-    // Cleanup function
-    return () => {
-      clearTimeout(timer)
-      animations.forEach(anim => {
-        anim.pause()
-        anim.revert()
-      })
+    // Play cash register sound for main coins (not bonus)
+    if (celebration.type !== 'bonus') {
+      playSound('cashRegister')
     }
-  }, [celebration.id, onRemove, movement, sparklePositions])
 
-  const getPopupStyle = () => {
+    // Main timeline for coordinated animation
+    const tl = createTimeline({
+      defaults: { ease: 'outQuart' },
+      onComplete: () => {
+        onRemove(celebration.id)
+      }
+    })
+
+    // Initial burst/flash
+    if (burst) {
+      tl.add(burst, {
+        scale: [0, 3],
+        opacity: [0.8, 0],
+        duration: 400,
+        ease: 'outQuart',
+      }, 0)
+    }
+
+    // Coin slam in with spring
+    tl.add(coin, {
+      scale: [0, 1.4, 1],
+      rotate: ['0deg', '45deg', '0deg'],
+      opacity: [0, 1],
+      duration: 400,
+      ease: springs.pop,
+    }, 0)
+
+    // Value pop up above coin
+    if (value) {
+      tl.add(value, {
+        scale: [0, 1.2, 1],
+        opacity: [0, 1],
+        translateY: [20, -10, 0],
+        duration: 350,
+        ease: springs.bounce,
+      }, 100)
+    }
+
+    // Glow pulse
+    if (glow) {
+      tl.add(glow, {
+        scale: [0.5, 1.5, 1.2],
+        opacity: [0, 0.6, 0.3],
+        duration: 500,
+        ease: 'outQuart',
+      }, 50)
+    }
+
+    // Sparkle burst
+    if (sparkles) {
+      const sparkleEls = sparkles.children
+      tl.add(sparkleEls, {
+        translateX: (_, i) => {
+          const angle = (i / sparkleEls.length) * Math.PI * 2
+          return Math.cos(angle) * utils.random(40, 70)
+        },
+        translateY: (_, i) => {
+          const angle = (i / sparkleEls.length) * Math.PI * 2
+          return Math.sin(angle) * utils.random(40, 70)
+        },
+        scale: [0, 1.5, 0],
+        opacity: [1, 1, 0],
+        rotate: () => utils.random(0, 360),
+        duration: 600,
+        delay: stagger(30, { from: 'center' }),
+        ease: 'outQuart',
+      }, 100)
+    }
+
+    // Float up with arc
+    tl.add(container, {
+      translateY: [0, -movement.arcHeight],
+      translateX: [0, movement.driftX],
+      duration: 800,
+      ease: 'outQuad',
+    }, 300)
+
+    // Coin spin during float
+    tl.add(coin, {
+      rotate: [`0deg`, `${movement.rotation}deg`],
+      scale: [1, 0.8],
+      duration: 800,
+      ease: 'outQuad',
+    }, 300)
+
+    // Fade out
+    tl.add(container, {
+      opacity: [1, 0],
+      scale: [1, 0.6],
+      duration: 400,
+      ease: 'inQuart',
+    }, 900)
+
+    return () => {
+      tl.pause()
+    }
+  }, [celebration.id, celebration.type, onRemove, movement, playSound])
+
+  const getStyles = () => {
     const type = celebration.type || 'points'
     const points = celebration.points
 
-    switch (type) {
-      case 'bonus':
-        return {
-          gradient: 'from-emerald-400 via-green-500 to-emerald-600',
-          icon: <Sparkle className="w-3.5 h-3.5" />,
-          shadow: 'shadow-emerald-500/50',
-          prefix: '+'
-        }
-      case 'streak':
-        return {
-          gradient: 'from-amber-400 via-orange-500 to-amber-600',
-          icon: <Lightning className="w-3.5 h-3.5 fill-current" />,
-          shadow: 'shadow-orange-500/50',
-          prefix: '🔥'
-        }
-      case 'level':
-        return {
-          gradient: 'from-purple-400 via-violet-500 to-purple-600',
-          icon: <Star className="w-3.5 h-3.5 fill-current" />,
-          shadow: 'shadow-purple-500/50',
-          prefix: '⭐'
-        }
-      default:
-        if (points >= 50) {
-          return {
-            gradient: 'from-rose-400 via-pink-500 to-rose-600',
-            icon: <Star className="w-3.5 h-3.5 fill-current" />,
-            shadow: 'shadow-rose-500/50',
-            prefix: '+'
-          }
-        } else if (points >= 25) {
-          return {
-            gradient: 'from-violet-400 via-purple-500 to-violet-600',
-            icon: <Sparkle className="w-3.5 h-3.5" />,
-            shadow: 'shadow-violet-500/50',
-            prefix: '+'
-          }
-        } else if (points >= 10) {
-          return {
-            gradient: 'from-blue-400 via-cyan-500 to-blue-600',
-            icon: <Plus className="w-3.5 h-3.5" />,
-            shadow: 'shadow-blue-500/50',
-            prefix: '+'
-          }
-        } else {
-          return {
-            gradient: 'from-teal-400 via-emerald-500 to-teal-600',
-            icon: <Plus className="w-3.5 h-3.5" />,
-            shadow: 'shadow-teal-500/50',
-            prefix: '+'
-          }
-        }
+    if (type === 'bonus') {
+      return {
+        coinBg: 'from-emerald-300 via-green-400 to-emerald-500',
+        glow: 'rgba(52, 211, 153, 0.6)',
+        textColor: 'text-emerald-900',
+      }
+    }
+    if (type === 'streak') {
+      return {
+        coinBg: 'from-orange-300 via-amber-400 to-orange-500',
+        glow: 'rgba(251, 146, 60, 0.6)',
+        textColor: 'text-orange-900',
+      }
+    }
+    if (type === 'level') {
+      return {
+        coinBg: 'from-purple-300 via-violet-400 to-purple-500',
+        glow: 'rgba(167, 139, 250, 0.6)',
+        textColor: 'text-purple-900',
+      }
+    }
+
+    // Default gold coin - Daily Bag theme
+    if (points >= 50) {
+      return {
+        coinBg: 'from-yellow-200 via-amber-400 to-yellow-500',
+        glow: 'rgba(255, 215, 0, 0.8)',
+        textColor: 'text-amber-900',
+      }
+    }
+    return {
+      coinBg: 'from-yellow-300 via-amber-400 to-yellow-500',
+      glow: 'rgba(255, 215, 0, 0.6)',
+      textColor: 'text-amber-900',
     }
   }
 
-  const style = getPopupStyle()
-  const fontSize = Math.min(56, Math.max(36, 36 + celebration.points / 2))
+  const styles = getStyles()
+  const coinSize = Math.min(72, Math.max(48, 48 + celebration.points / 3))
+  const sparkleCount = celebration.points >= 30 ? 10 : celebration.points >= 15 ? 7 : 5
 
   return (
     <div
@@ -227,77 +232,108 @@ const DamagePopupItem: React.FC<DamagePopupItemProps> = ({ celebration, onRemove
         left: celebration.x,
         top: celebration.y,
         transform: 'translate(-50%, -50%)',
-        opacity: 0,
       }}
     >
-      {/* Main popup */}
-      <div ref={innerRef} className="relative">
-        {/* Glow effect */}
+      {/* Initial burst flash */}
+      <div
+        ref={burstRef}
+        className="absolute rounded-full"
+        style={{
+          width: coinSize,
+          height: coinSize,
+          left: '50%',
+          top: '50%',
+          marginLeft: -coinSize / 2,
+          marginTop: -coinSize / 2,
+          background: `radial-gradient(circle, ${styles.glow} 0%, transparent 70%)`,
+          opacity: 0,
+        }}
+      />
+
+      {/* Glow ring */}
+      <div
+        ref={glowRef}
+        className="absolute rounded-full"
+        style={{
+          width: coinSize * 1.5,
+          height: coinSize * 1.5,
+          left: '50%',
+          top: '50%',
+          marginLeft: -coinSize * 0.75,
+          marginTop: -coinSize * 0.75,
+          background: `radial-gradient(circle, ${styles.glow} 0%, transparent 60%)`,
+          opacity: 0,
+        }}
+      />
+
+      {/* Main coin */}
+      <div
+        ref={coinRef}
+        className={`relative flex items-center justify-center font-bold rounded-full bg-gradient-to-br ${styles.coinBg}`}
+        style={{
+          width: coinSize,
+          height: coinSize,
+          boxShadow: `
+            0 6px 20px ${styles.glow},
+            inset 0 -4px 8px rgba(0,0,0,0.25),
+            inset 0 4px 8px rgba(255,255,255,0.5)
+          `,
+          fontSize: coinSize * 0.35,
+          color: '#8B6914',
+          textShadow: '0 1px 0 rgba(255,255,255,0.6)',
+          opacity: 0,
+        }}
+      >
+        $
+        {/* Coin shine */}
         <div
-          ref={glowRef}
-          className={`absolute inset-0 blur-xl ${style.shadow} rounded-full`}
-          style={{ opacity: 0 }}
+          className="absolute inset-0 rounded-full overflow-hidden"
+          style={{
+            background: 'linear-gradient(135deg, rgba(255,255,255,0.5) 0%, transparent 40%)',
+          }}
         />
+        {/* Inner ring */}
+        <div
+          className="absolute rounded-full border-2 border-amber-600/30"
+          style={{
+            width: coinSize - 8,
+            height: coinSize - 8,
+          }}
+        />
+      </div>
 
-        {/* Main number display - game style with high contrast */}
-        <div className="relative flex items-center gap-3">
-          {/* Icon with massive glow */}
-          <div
-            className="text-white scale-150"
-            style={{
-              filter: 'drop-shadow(0 0 12px rgba(255,255,255,1)) drop-shadow(0 0 24px rgba(255,255,255,0.6))'
-            }}
-          >
-            {style.icon}
-          </div>
+      {/* Value label */}
+      <div
+        ref={valueRef}
+        className={`absolute left-1/2 -translate-x-1/2 whitespace-nowrap font-black text-xl px-3 py-1 rounded-full bg-white/95 shadow-lg ${styles.textColor}`}
+        style={{
+          top: -coinSize / 2 - 16,
+          opacity: 0,
+          textShadow: '0 1px 2px rgba(0,0,0,0.1)',
+        }}
+      >
+        +{celebration.points}
+      </div>
 
-          {/* Number with thick stroke and multiple shadows for maximum visibility */}
-          <div
-            className="relative font-black select-none"
-            style={{
-              fontSize: `${fontSize}px`,
-              color: '#FFFFFF',
-              textShadow: `
-                -4px -4px 0 #000,
-                4px -4px 0 #000,
-                -4px 4px 0 #000,
-                4px 4px 0 #000,
-                -4px 0 0 #000,
-                4px 0 0 #000,
-                0 -4px 0 #000,
-                0 4px 0 #000,
-                -2px -2px 0 #000,
-                2px -2px 0 #000,
-                -2px 2px 0 #000,
-                2px 2px 0 #000,
-                0 0 30px rgba(255, 255, 255, 1),
-                0 0 60px rgba(255, 255, 255, 0.8),
-                0 6px 20px rgba(0, 0, 0, 0.9)
-              `,
-              letterSpacing: '-0.02em',
-              fontFamily: 'Impact, "Arial Black", sans-serif',
-              fontWeight: 900,
-              WebkitTextStroke: '1px rgba(255, 255, 255, 0.3)',
-            }}
-          >
-            {style.prefix}{celebration.points}
-          </div>
-        </div>
-
-        {/* Sparkles - radial burst */}
-        {sparklePositions.map((pos, i) => (
+      {/* Sparkle burst */}
+      <div ref={sparklesRef} className="absolute inset-0">
+        {[...Array(sparkleCount)].map((_, i) => (
           <div
             key={i}
-            ref={(el) => { sparkleRefs.current[i] = el }}
-            className="absolute w-2 h-2 rounded-full bg-white shadow-lg"
+            className="absolute left-1/2 top-1/2"
             style={{
-              left: pos.left,
-              top: pos.top,
-              transform: 'translate(-50%, -50%)',
-              opacity: 0,
-              boxShadow: '0 0 6px 2px rgba(255,255,255,0.8)',
+              marginLeft: -6,
+              marginTop: -6,
             }}
-          />
+          >
+            <Sparkle
+              weight="fill"
+              className="w-3 h-3 text-yellow-300"
+              style={{
+                filter: 'drop-shadow(0 0 4px rgba(255, 215, 0, 0.8))',
+              }}
+            />
+          </div>
         ))}
       </div>
     </div>
@@ -319,28 +355,31 @@ export const usePopupCelebrations = () => {
       id: `celebration-${Date.now()}-${Math.random()}`,
       points,
       choreTitle,
-      x: x + (Math.random() - 0.5) * 20,
-      y: y + (Math.random() - 0.5) * 20,
+      x: x + utils.random(-15, 15),
+      y: y + utils.random(-15, 15),
       timestamp: Date.now(),
       type: type || 'points'
     }
 
     setCelebrations(prev => [...prev, popup])
 
-    // Add a smaller bonus popup for high values
-    if (points >= 20 && type !== 'bonus') {
-      setTimeout(() => {
-        const bonusPopup: PopupCelebration = {
-          id: `bonus-${Date.now()}-${Math.random()}`,
-          points: Math.floor(points * 0.25),
-          choreTitle,
-          x: x + (Math.random() - 0.5) * 60,
-          y: y + (Math.random() - 0.5) * 40,
-          timestamp: Date.now(),
-          type: 'bonus'
-        }
-        setCelebrations(prev => [...prev, bonusPopup])
-      }, 100)
+    // Add bonus mini-coins for high values
+    if (points >= 25 && type !== 'bonus') {
+      const bonusCount = points >= 50 ? 3 : 2
+      for (let i = 0; i < bonusCount; i++) {
+        setTimeout(() => {
+          const bonusPopup: PopupCelebration = {
+            id: `bonus-${Date.now()}-${Math.random()}`,
+            points: Math.floor(points * 0.15),
+            choreTitle,
+            x: x + utils.random(-80, 80),
+            y: y + utils.random(-60, 60),
+            timestamp: Date.now(),
+            type: 'bonus'
+          }
+          setCelebrations(prev => [...prev, bonusPopup])
+        }, 80 + i * 60)
+      }
     }
   }
 

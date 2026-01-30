@@ -1,0 +1,8 @@
+[{
+  "relation": ["delegate_permission/common.handle_all_urls"],
+  "target": {
+    "namespace": "android_app",
+    "package_name": "com.dailybag.app",
+    "sha256_cert_fingerprints": ["C4:9D:7B:E2:D4:CE:04:D2:08:DD:74:68:50:7E:45:3F:76:BE:C2:E7:3A:66:25:AB:B5:43:EB:B8:4B:8A:81:90"]
+  }
+}]

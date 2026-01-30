@@ -1,0 +1,104 @@
+{
+  "5": {
+    "class_type": "EmptyLatentImage",
+    "inputs": {
+      "width": 1024,
+      "height": 1024,
+      "batch_size": 1
+    }
+  },
+  "6": {
+    "class_type": "CLIPTextEncodeFlux",
+    "inputs": {
+      "clip": [
+        "11",
+        0
+      ],
+      "clip_l": "a hand holding a smartphone showing a cash reward screen with golden coins transforming into dollar bills, dark navy blue background hex 141B2D, amber gold UI accents hex F59E0B, magical particle effects, celebration confetti, modern fintech app design, 8k render",
+      "guidance": 3.5,
+      "t5xxl": "a hand holding a smartphone showing a cash reward screen with golden coins transforming into dollar bills, dark navy blue background hex 141B2D, amber gold UI accents hex F59E0B, magical particle effects, celebration confetti, modern fintech app design, 8k render"
+    }
+  },
+  "8": {
+    "class_type": "VAEDecode",
+    "inputs": {
+      "samples": [
+        "13",
+        0
+      ],
+      "vae": [
+        "10",
+        0
+      ]
+    }
+  },
+  "9": {
+    "class_type": "SaveImage",
+    "inputs": {
+      "images": [
+        "8",
+        0
+      ],
+      "filename_prefix": "brand_reward_redemption"
+    }
+  },
+  "10": {
+    "class_type": "VAELoader",
+    "inputs": {
+      "vae_name": "ae.safetensors"
+    }
+  },
+  "11": {
+    "class_type": "DualCLIPLoader",
+    "inputs": {
+      "clip_name1": "clip_l.safetensors",
+      "clip_name2": "t5xxl_fp8_e4m3fn.safetensors",
+      "type": "flux"
+    }
+  },
+  "12": {
+    "class_type": "UnetLoaderGGUF",
+    "inputs": {
+      "unet_name": "flux1-dev-Q8_0.gguf"
+    }
+  },
+  "13": {
+    "class_type": "KSampler",
+    "inputs": {
+      "model": [
+        "12",
+        0
+      ],
+      "positive": [
+        "6",
+        0
+      ],
+      "negative": [
+        "14",
+        0
+      ],
+      "latent_image": [
+        "5",
+        0
+      ],
+      "seed": 788533586,
+      "steps": 20,
+      "cfg": 1.0,
+      "sampler_name": "euler",
+      "scheduler": "simple",
+      "denoise": 1.0
+    }
+  },
+  "14": {
+    "class_type": "CLIPTextEncodeFlux",
+    "inputs": {
+      "clip": [
+        "11",
+        0
+      ],
+      "clip_l": "",
+      "guidance": 3.5,
+      "t5xxl": ""
+    }
+  }
+}
