@@ -22,7 +22,7 @@ export const InteractiveWrapper = memo<InteractiveWrapperProps>(({
   className = '',
   onClick,
   disabled = false,
-  sound = 'click',
+  sound: _sound = 'click', // Sound disabled for now - kept for future use
   scale = 1.02,
   whileTap = 0.98
 }) => {

@@ -1,4 +1,4 @@
-import React, { useMemo, memo, useEffect, useRef } from 'react'
+import React, { useMemo, memo } from 'react'
 import { useStats } from '../hooks/useStats'
 import { useAuth } from '../hooks/useAuth'
 import { useDemo } from '../contexts/DemoContext'

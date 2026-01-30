@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react'
-import { animate, createTimeline, stagger, utils, createSpring } from 'animejs'
+import { createTimeline, stagger, utils, createSpring } from 'animejs'
 import { Sparkle } from '@phosphor-icons/react'
 import { useSoundEffect } from '../contexts/SoundContext'
 
@@ -62,9 +62,6 @@ const CoinPopupItem: React.FC<CoinPopupItemProps> = ({ celebration, onRemove }) 
     arcHeight: utils.random(60, 100),
     rotation: utils.random(360, 720),
   }), [])
-
-  // More coins for bigger points
-  const coinCount = celebration.points >= 50 ? 5 : celebration.points >= 25 ? 3 : 1
 
   useEffect(() => {
     const container = containerRef.current
@@ -133,11 +130,11 @@ const CoinPopupItem: React.FC<CoinPopupItemProps> = ({ celebration, onRemove }) 
     if (sparkles) {
       const sparkleEls = sparkles.children
       tl.add(sparkleEls, {
-        translateX: (_, i) => {
+        translateX: (_: Element, i: number) => {
           const angle = (i / sparkleEls.length) * Math.PI * 2
           return Math.cos(angle) * utils.random(40, 70)
         },
-        translateY: (_, i) => {
+        translateY: (_: Element, i: number) => {
           const angle = (i / sparkleEls.length) * Math.PI * 2
           return Math.sin(angle) * utils.random(40, 70)
         },
