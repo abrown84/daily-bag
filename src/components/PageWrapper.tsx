@@ -27,12 +27,13 @@ export const PageWrapper: React.FC<PageWrapperProps> = ({
 }) => {
   const audioRef = useRef<HTMLAudioElement | null>(null)
   const [isMuted, setIsMuted] = useState(() => {
-    // Load mute preference from localStorage
+    // Load mute preference from localStorage, default to muted
     try {
       const saved = localStorage.getItem('backgroundAudioMuted')
-      return saved === 'true'
+      // Default to muted (true) unless user explicitly enabled audio ('false')
+      return saved !== 'false'
     } catch {
-      return false
+      return true
     }
   })
 
