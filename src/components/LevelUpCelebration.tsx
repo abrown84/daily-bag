@@ -159,11 +159,11 @@ export const LevelUpCelebration: React.FC = () => {
         if (coinsRef.current) {
           const coins = coinsRef.current.children
           tl.add(coins, {
-            translateX: (_: Element, i: number) => {
+            translateX: (_target: unknown, i: number) => {
               const angle = (i / 20) * Math.PI * 2
               return Math.cos(angle) * utils.random(100, 180)
             },
-            translateY: (_: Element, i: number) => {
+            translateY: (_target: unknown, i: number) => {
               const angle = (i / 20) * Math.PI * 2
               return Math.sin(angle) * utils.random(100, 180)
             },
@@ -218,11 +218,11 @@ export const LevelUpCelebration: React.FC = () => {
           Array.from(bursts).forEach((burst, burstIndex) => {
             const particles = burst.children
             tl.add(particles, {
-              translateX: (_: Element, i: number) => {
+              translateX: (_target: unknown, i: number) => {
                 const angle = (i / 12) * Math.PI * 2
                 return Math.cos(angle) * utils.random(30, 60)
               },
-              translateY: (_: Element, i: number) => {
+              translateY: (_target: unknown, i: number) => {
                 const angle = (i / 12) * Math.PI * 2
                 return Math.sin(angle) * utils.random(30, 60)
               },

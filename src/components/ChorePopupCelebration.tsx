@@ -130,11 +130,11 @@ const CoinPopupItem: React.FC<CoinPopupItemProps> = ({ celebration, onRemove }) 
     if (sparkles) {
       const sparkleEls = sparkles.children
       tl.add(sparkleEls, {
-        translateX: (_: Element, i: number) => {
+        translateX: (_target: unknown, i: number) => {
           const angle = (i / sparkleEls.length) * Math.PI * 2
           return Math.cos(angle) * utils.random(40, 70)
         },
-        translateY: (_: Element, i: number) => {
+        translateY: (_target: unknown, i: number) => {
           const angle = (i / sparkleEls.length) * Math.PI * 2
           return Math.sin(angle) * utils.random(40, 70)
         },
