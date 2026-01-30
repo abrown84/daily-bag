@@ -3,10 +3,9 @@
   "outputDirectory": "dist",
   "framework": "vite",
   "rewrites": [
-    {
-      "source": "/((?!assets/|.well-known/|.*\\.html$).*)",
-      "destination": "/index.html"
-    }
+    { "source": "/privacy-policy.html", "destination": "/privacy-policy.html" },
+    { "source": "/.well-known/:path*", "destination": "/.well-known/:path*" },
+    { "source": "/(.*)", "destination": "/index.html" }
   ],
   "headers": [
     {
