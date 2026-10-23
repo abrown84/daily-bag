@@ -42,7 +42,7 @@ export const NotificationSettings: React.FC = () => {
 
     if (isEnabled) {
       return {
-        icon: BellRing,
+        icon: BellRinging,
         text: 'Notifications enabled',
         description: 'You will receive chore reminders.',
         color: 'text-green-500',
