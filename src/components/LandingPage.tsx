@@ -28,15 +28,6 @@ const fadeInUp = {
 	}
 }
 
-const fadeInScale = {
-	hidden: { opacity: 0, scale: 0.95 },
-	visible: {
-		opacity: 1,
-		scale: 1,
-		transition: { duration: 0.5, ease: smoothEase }
-	}
-}
-
 const staggerContainer = {
 	hidden: { opacity: 0 },
 	visible: {

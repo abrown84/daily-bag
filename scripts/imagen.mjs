@@ -3,7 +3,7 @@
  * Image Generation Script - Multi-Provider Support
  *
  * Providers:
- *   - gemini: Google Gemini 2.5 Flash (supports image editing)
+ *   - gemini: Google Gemini image models (supports image editing)
  *   - cogview: Zhipu AI CogView-4 (text-to-image only)
  *
  * Usage:
@@ -57,10 +57,13 @@ const PROVIDERS = {
     name: "Google Gemini",
     keyName: "GOOGLE_GEMINI_API_KEY",
     supportsEditing: true,
-    defaultModel: "gemini-2.0-flash-exp",
+    defaultModel: "gemini-3.1-flash-image",
     models: [
-      "gemini-2.0-flash-exp",        // Latest experimental
-      "gemini-2.5-flash-image",      // Image-specific model
+      "gemini-3.1-flash-image",       // Nano Banana 2 — high-efficiency image gen/edit
+      "gemini-nano-banana-2.1",       // Nano Banana 2.1 — improved quality/typography
+      "gemini-3.1-flash-lite-image",  // Nano Banana 2 Lite — low latency / cost
+      "gemini-3-pro-image",           // Nano Banana Pro — studio-quality
+      "gemini-2.5-flash-image",       // Nano Banana (legacy 2.5 image model)
     ],
   },
   cogview: {
@@ -778,7 +781,7 @@ Examples:
   node scripts/imagen.mjs --prompt "A sunset over mountains"
 
   # Use specific model
-  node scripts/imagen.mjs --prompt "A cat" --model gemini-2.0-flash-exp
+  node scripts/imagen.mjs --prompt "A cat" --model gemini-3.1-flash-image
 
   # Use CogView with older model
   node scripts/imagen.mjs --prompt "一只可爱的猫咪" --provider cogview --model cogview-3
