@@ -9,9 +9,9 @@
  *   node scripts/imagen.mjs --prompt "description" [options]
  *
  * Env (see https://github.com/abrown84/one-gateway):
- *   ONE_GATEWAY_TOKEN        required
- *   ONE_GATEWAY_URL          default http://127.0.0.1:18789
- *   ONE_GATEWAY_MODEL        chat / routing model
+ *   ONE_GATEWAY_URL          default https://brwnindustries.com/labs/one-gateway
+ *   ONE_GATEWAY_MODEL        default gemini-3.8-flash
+ *   ONE_GATEWAY_TOKEN        optional (public gateway needs none)
  *   ONE_GATEWAY_IMAGE_MODEL  preferred model for this script (falls back to ONE_GATEWAY_MODEL)
  *
  * Capability gap:
@@ -283,7 +283,7 @@ if (values.list) {
   console.log(`
 One Gateway model selection (configured via env / OpenClaw — not a local catalog):
 
-  ONE_GATEWAY_MODEL         ${process.env.ONE_GATEWAY_MODEL || "openclaw (default)"}
+  ONE_GATEWAY_MODEL         ${process.env.ONE_GATEWAY_MODEL || "gemini-3.8-flash (default)"}
   ONE_GATEWAY_IMAGE_MODEL   ${process.env.ONE_GATEWAY_IMAGE_MODEL || "(unset — falls back to ONE_GATEWAY_MODEL)"}
   ONE_GATEWAY_FALLBACKS     ${process.env.ONE_GATEWAY_FALLBACKS || "(none)"}
 
@@ -313,7 +313,7 @@ Options:
 
 Examples:
   node scripts/imagen.mjs --prompt "A sunset over mountains"
-  node scripts/imagen.mjs --prompt "A cat" --model openclaw --refine
+  node scripts/imagen.mjs --prompt "A cat" --model gemini-3.8-flash --refine
 
 ${describeGatewaySetup()}
 `);

@@ -7,9 +7,9 @@ All AI traffic goes through One Gateway / OpenClaw:
 Direct OpenRouter / Google / OpenAI calls are not allowed.
 
 Env (see https://github.com/abrown84/one-gateway):
-  ONE_GATEWAY_TOKEN         required
-  ONE_GATEWAY_URL           default http://127.0.0.1:18789
-  ONE_GATEWAY_MODEL         default openclaw
+  ONE_GATEWAY_URL           default https://brwnindustries.com/labs/one-gateway
+  ONE_GATEWAY_MODEL         default gemini-3.8-flash
+  ONE_GATEWAY_TOKEN         optional (public gateway needs none)
   ONE_GATEWAY_IMAGE_MODEL   preferred for this script
   ONE_GATEWAY_AGENT         default main
 
@@ -41,18 +41,20 @@ load_dotenv(os.path.expanduser("~/.claude/api-keys.env"))
 load_dotenv(ROOT / ".env")
 load_dotenv(ROOT / ".env.local")
 
-ONE_GATEWAY_TOKEN = os.getenv("ONE_GATEWAY_TOKEN") or os.getenv("OPENCLAW_GATEWAY_TOKEN")
+ONE_GATEWAY_TOKEN = (
+    os.getenv("ONE_GATEWAY_TOKEN") or os.getenv("OPENCLAW_GATEWAY_TOKEN") or ""
+).strip() or None
 ONE_GATEWAY_URL = (
     os.getenv("ONE_GATEWAY_URL")
     or os.getenv("OPENCLAW_BASE_URL")
-    or "http://127.0.0.1:18789"
+    or "https://brwnindustries.com/labs/one-gateway"
 ).rstrip("/")
 ONE_GATEWAY_AGENT = os.getenv("ONE_GATEWAY_AGENT") or os.getenv("OPENCLAW_AGENT_ID") or "main"
 DEFAULT_MODEL = (
     os.getenv("ONE_GATEWAY_IMAGE_MODEL")
     or os.getenv("ONE_GATEWAY_MODEL")
     or os.getenv("OPENCLAW_MODEL_PRIMARY")
-    or "openclaw"
+    or "gemini-3.8-flash"
 )
 
 OUTPUT_DIR = Path(__file__).parent / "images"
@@ -108,10 +110,11 @@ def generate_image(prompt: str, filename: str, model: str = DEFAULT_MODEL) -> bo
     """Generate image via One Gateway chat completions."""
     url = f"{ONE_GATEWAY_URL}/v1/chat/completions"
     headers = {
-        "Authorization": f"Bearer {ONE_GATEWAY_TOKEN}",
         "Content-Type": "application/json",
         "x-openclaw-agent-id": ONE_GATEWAY_AGENT,
     }
+    if ONE_GATEWAY_TOKEN:
+        headers["Authorization"] = f"Bearer {ONE_GATEWAY_TOKEN}"
     data = {
         "model": model,
         "messages": [
@@ -200,11 +203,6 @@ if __name__ == "__main__":
     print("=" * 60)
     print("Daily Bag Image Generator (One Gateway)")
     print("=" * 60)
-
-    if not ONE_GATEWAY_TOKEN:
-        print("Error: ONE_GATEWAY_TOKEN (or OPENCLAW_GATEWAY_TOKEN) not found")
-        print("See https://github.com/abrown84/one-gateway")
-        sys.exit(1)
 
     models = [DEFAULT_MODEL]
     # Optional comma-separated fallbacks, same convention as one-gateway

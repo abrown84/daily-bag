@@ -57,13 +57,14 @@ VITE_STRIPE_PUBLISHABLE_KEY=pk_test_...
 # Optional: For local scripts only (NOT exposed to frontend)
 STRIPE_SECRET_KEY=sk_test_...
 
-# One Gateway — required for AI scripts (scripts/imagen.mjs, marketing/*)
+# One Gateway — for AI scripts (scripts/imagen.mjs, marketing/*)
 # Never call Google / OpenRouter / OpenAI directly; route via One Gateway.
 # https://github.com/abrown84/one-gateway
-ONE_GATEWAY_TOKEN=your_openclaw_gateway_token
-ONE_GATEWAY_URL=http://127.0.0.1:18789
-ONE_GATEWAY_MODEL=openclaw
-# ONE_GATEWAY_IMAGE_MODEL=openclaw
+# Defaults: public gateway URL + gemini-3.8-flash; token optional (omit for public).
+# ONE_GATEWAY_URL=https://brwnindustries.com/labs/one-gateway
+# ONE_GATEWAY_MODEL=gemini-3.8-flash
+# ONE_GATEWAY_TOKEN=your_openclaw_gateway_token
+# ONE_GATEWAY_IMAGE_MODEL=gemini-3.8-flash
 ```
 
 **Important**: Secret keys should be set in Convex Dashboard, not in `.env.local`. See [docs/SECURITY_FEATURES.md](docs/SECURITY_FEATURES.md) for details.

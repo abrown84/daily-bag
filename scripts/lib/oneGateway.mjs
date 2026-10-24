@@ -8,8 +8,10 @@
  * Consumes the same OpenAI-compatible OpenClaw endpoint that the
  * official `one-gateway` client uses:
  *   POST {ONE_GATEWAY_URL}/v1/chat/completions
- *   Authorization: Bearer {ONE_GATEWAY_TOKEN}
+ *   Authorization: Bearer {ONE_GATEWAY_TOKEN}  (only if set)
  *   x-openclaw-agent-id: {ONE_GATEWAY_AGENT}
+ *
+ * Defaults target the public gateway at brwnindustries.com (no token).
  *
  * Note: the published npm `one-gateway` package on the registry is a
  * stub, and the GitHub package omits built `dist/` artifacts, so this
@@ -116,24 +118,28 @@ function parseFallbacks(v = "") {
     .filter(Boolean);
 }
 
+const DEFAULT_GATEWAY_URL = "https://brwnindustries.com/labs/one-gateway";
+const DEFAULT_GATEWAY_MODEL = "gemini-3.8-flash";
+
 /**
  * Resolve One Gateway config from env (same vars as one-gateway getConfig).
+ * ONE_GATEWAY_TOKEN is optional — the public gateway needs no auth.
  */
 export function resolveGatewayConfig(env = process.env) {
   loadGatewayEnv();
-  const token = env.ONE_GATEWAY_TOKEN ?? env.OPENCLAW_GATEWAY_TOKEN;
-  if (!token) {
-    throw new Error(
-      "Missing gateway token. Set ONE_GATEWAY_TOKEN (or OPENCLAW_GATEWAY_TOKEN) in your environment."
-    );
-  }
+  const rawToken = env.ONE_GATEWAY_TOKEN ?? env.OPENCLAW_GATEWAY_TOKEN;
+  const token =
+    rawToken && String(rawToken).trim()
+      ? sanitizeHeaderValue(rawToken, "ONE_GATEWAY_TOKEN")
+      : null;
 
   return {
     baseUrl: validateBaseUrl(
-      env.ONE_GATEWAY_URL ?? env.OPENCLAW_BASE_URL ?? "http://127.0.0.1:18789"
+      env.ONE_GATEWAY_URL ?? env.OPENCLAW_BASE_URL ?? DEFAULT_GATEWAY_URL
     ),
-    token: sanitizeHeaderValue(token, "ONE_GATEWAY_TOKEN"),
-    primaryModel: env.ONE_GATEWAY_MODEL ?? env.OPENCLAW_MODEL_PRIMARY ?? "openclaw",
+    token,
+    primaryModel:
+      env.ONE_GATEWAY_MODEL ?? env.OPENCLAW_MODEL_PRIMARY ?? DEFAULT_GATEWAY_MODEL,
     fallbackModels: parseFallbacks(
       env.ONE_GATEWAY_FALLBACKS ?? env.OPENCLAW_MODEL_FALLBACKS ?? ""
     ),
@@ -156,13 +162,17 @@ async function callOnce({ config, model, messages, temperature, maxTokens, signa
   };
   if (modalities) body.modalities = modalities;
 
+  const headers = {
+    "Content-Type": "application/json",
+    "x-openclaw-agent-id": config.agentId,
+  };
+  if (config.token) {
+    headers.Authorization = `Bearer ${config.token}`;
+  }
+
   const res = await fetch(`${config.baseUrl}/v1/chat/completions`, {
     method: "POST",
-    headers: {
-      Authorization: `Bearer ${config.token}`,
-      "Content-Type": "application/json",
-      "x-openclaw-agent-id": config.agentId,
-    },
+    headers,
     body: JSON.stringify(body),
     signal,
   });
@@ -265,9 +275,9 @@ export async function gatewayChatCompletions({
 export function describeGatewaySetup() {
   return `
 One Gateway env (see https://github.com/abrown84/one-gateway):
-  ONE_GATEWAY_TOKEN   - required (OpenClaw gateway token)
-  ONE_GATEWAY_URL     - default http://127.0.0.1:18789
-  ONE_GATEWAY_MODEL   - primary chat model (default: openclaw)
+  ONE_GATEWAY_URL     - default ${DEFAULT_GATEWAY_URL}
+  ONE_GATEWAY_MODEL   - primary chat model (default: ${DEFAULT_GATEWAY_MODEL})
+  ONE_GATEWAY_TOKEN   - optional (omit for the public gateway; send Authorization only if set)
   ONE_GATEWAY_IMAGE_MODEL - optional override for image-oriented models
   ONE_GATEWAY_AGENT   - OpenClaw agent id (default: main)
 `.trim();

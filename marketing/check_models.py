@@ -6,8 +6,8 @@ All AI/provider traffic must go through One Gateway
 (https://github.com/abrown84/one-gateway).
 
 Env:
-  ONE_GATEWAY_TOKEN  required
-  ONE_GATEWAY_URL    default http://127.0.0.1:18789
+  ONE_GATEWAY_URL    default https://brwnindustries.com/labs/one-gateway
+  ONE_GATEWAY_TOKEN  optional (public gateway needs none)
 """
 
 from __future__ import annotations
@@ -30,28 +30,22 @@ load_dotenv(os.path.expanduser("~/.claude/api-keys.env"))
 load_dotenv(ROOT / ".env")
 load_dotenv(ROOT / ".env.local")
 
-token = os.getenv("ONE_GATEWAY_TOKEN") or os.getenv("OPENCLAW_GATEWAY_TOKEN")
+token = (
+    os.getenv("ONE_GATEWAY_TOKEN") or os.getenv("OPENCLAW_GATEWAY_TOKEN") or ""
+).strip() or None
 base = (
     os.getenv("ONE_GATEWAY_URL")
     or os.getenv("OPENCLAW_BASE_URL")
-    or "http://127.0.0.1:18789"
+    or "https://brwnindustries.com/labs/one-gateway"
 ).rstrip("/")
 agent = os.getenv("ONE_GATEWAY_AGENT") or os.getenv("OPENCLAW_AGENT_ID") or "main"
 
-if not token:
-    print("Error: ONE_GATEWAY_TOKEN (or OPENCLAW_GATEWAY_TOKEN) not found")
-    sys.exit(1)
-
 url = f"{base}/v1/models"
 print(f"GET {url}")
-response = requests.get(
-    url,
-    headers={
-        "Authorization": f"Bearer {token}",
-        "x-openclaw-agent-id": agent,
-    },
-    timeout=60,
-)
+headers = {"x-openclaw-agent-id": agent}
+if token:
+    headers["Authorization"] = f"Bearer {token}"
+response = requests.get(url, headers=headers, timeout=60)
 
 if response.status_code == 200:
     payload = response.json()
